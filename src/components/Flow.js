@@ -9,24 +9,26 @@ import ReactFlow, {
     useEdgesState,
     addEdge,
 } from 'reactflow';
+import { observer } from 'mobx-react-lite';
+import { store } from '../store/ApplicationStore';
 
+import axios from 'axios';
 import 'reactflow/dist/style.css';
+import { CustomNode } from './Node';
 
 /* 
  { id: '1', position: { x: 0, y: 0 }, data: { label: '1' }, type: 'input' },
     { id: '2', position: { x: 0, y: 100 }, data: { label: '2' } },
 
     { id: 'e1-2', source: '1', target: '2' }
+
+    
 */
-const initialNodes = [
 
-];
+const Flow = observer(() => {
 
-const initialEdges = [];
-
-function Flow() {
-    const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-    const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+    const [nodes, setNodes, onNodesChange] = useNodesState([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
     const [multiTextEnabled, setMultiTextEnabled] = useState(false);
     const [multiTextValue, setMultiTextValue] = useState(0);
@@ -34,8 +36,22 @@ function Flow() {
     const [greaterThanTextEnabled, setGreaterThanTextEnabled] = useState(false);
     const [greaterThenTextValue, setGreaterThanTextValue] = useState(0);
 
+    const [id, setId] = useState(store.selectedProject.id);
 
     const [refreshFlag, setRefreshFlag] = useState(false);
+
+    useState(() => {
+        axios.get(`https://localhost:7170/api/FlowTools/${store.selectedProject.id}`).then(response => {
+            console.log("gelen data", response.data)
+            if (response.data.nodes != null | undefined && response.data.edges != null | undefined) {
+                setNodes(response.data.nodes);
+                setEdges(response.data.edges);
+            }
+        })
+    }, [])
+
+
+
 
     const onConnect = useCallback((params) => {
         console.log("params ", params)
@@ -49,24 +65,14 @@ function Flow() {
 
         if (sourceNode.data.customType === "randomInteger" && targetNode.data.customType === "multiplier") {
             targetNode.data.outputValue = Number(targetNode.data.carpan) * Number(sourceNode.data.outputValue);
-            targetNode.data.label = <>
-                <div className='lead text-center'>
-                    Carpan : {targetNode.data.carpan}
-                    Output : {targetNode.data.outputValue}
-                </div>
-            </>
+            targetNode.data.label = targetNode.data.outputValue
             setNodes(nodes);
             setRefreshFlag(state => !state)
         }
 
         else if (sourceNode.data.customType === "multiplier" && targetNode.data.customType === "randomInteger") {
             sourceNode.data.outputValue = Number(sourceNode.data.carpan) * Number(targetNode.data.outputValue);
-            sourceNode.data.label = <>
-                <div className='lead text-center'>
-                    Carpan : {sourceNode.data.carpan}
-                    Output : {sourceNode.data.outputValue}
-                </div>
-            </>
+            sourceNode.data.label = sourceNode.data.outputValue
             setNodes(nodes);
             setRefreshFlag(state => !state)
         }
@@ -77,24 +83,14 @@ function Flow() {
             if (sourceNode.data.outputValue !== 0) {
                 console.log("birinci")
                 targetNode.data.outputValue = Number(targetNode.data.carpan) * Number(sourceNode.data.outputValue);
-                targetNode.data.label = <>
-                    <div className='lead text-center'>
-                        Carpan : {targetNode.data.carpan}
-                        Output : {targetNode.data.outputValue}
-                    </div>
-                </>
+                targetNode.data.label = targetNode.data.outputValue
                 setNodes(nodes);
                 setRefreshFlag(state => !state)
             }
             else if (targetNode.data.outputValue !== 0) {
                 console.log("ikinci")
                 sourceNode.data.outputValue = Number(sourceNode.data.carpan) * Number(targetNode.data.outputValue);
-                targetNode.data.label = <>
-                    <div className='lead text-center'>
-                        Carpan : {sourceNode.data.carpan}
-                        Output : {sourceNode.data.outputValue}
-                    </div>
-                </>
+                targetNode.data.label = sourceNode.data.outputValue
                 setNodes(nodes);
                 setRefreshFlag(state => !state)
             }
@@ -104,12 +100,7 @@ function Flow() {
 
         else if (sourceNode.data.customType == "greaterThan" && targetNode.data.customType == "randomInteger") {
             sourceNode.data.outputValue = (Number(sourceNode.data.carpan) > Number(targetNode.data.outputValue)) == true ? 'true' : 'false';
-            sourceNode.data.label = <>
-                <div className='lead text-center'>
-                    {sourceNode.data.carpan} greater than {targetNode.data.outputValue} ? {sourceNode.data.outputValue}
-
-                </div>
-            </>
+            sourceNode.data.label = sourceNode.data.outputValue
             setNodes(nodes);
             setRefreshFlag(state => !state)
         }
@@ -117,12 +108,7 @@ function Flow() {
         else if (sourceNode.data.customType == "randomInteger" && targetNode.data.customType == "greaterThan") {
 
             targetNode.data.outputValue = (Number(targetNode.data.carpan) > Number(sourceNode.data.outputValue)) == true ? 'true' : 'false';
-            targetNode.data.label = <>
-                <div className='lead text-center'>
-                    {targetNode.data.carpan} greater than {sourceNode.data.outputValue} ? {targetNode.data.outputValue}
-
-                </div>
-            </>
+            targetNode.data.label = targetNode.data.outputValue
             setNodes(nodes);
             setRefreshFlag(state => !state)
 
@@ -131,12 +117,8 @@ function Flow() {
         else if (sourceNode.data.customType == "multiplier" && targetNode.data.customType == "greaterThan") {
 
             targetNode.data.outputValue = (Number(targetNode.data.carpan) > Number(sourceNode.data.outputValue)) == true ? 'true' : 'false';
-            targetNode.data.label = <>
-                <div className='lead text-center'>
-                    {targetNode.data.carpan} greater than {sourceNode.data.outputValue} ? {targetNode.data.outputValue}
-
-                </div>
-            </>
+            targetNode.data.label =
+                targetNode.data.outputValue
             setNodes(nodes);
             setRefreshFlag(state => !state)
 
@@ -145,12 +127,7 @@ function Flow() {
         else if (sourceNode.data.customType == "greaterThan" && targetNode.data.customType == "multiplier") {
 
             sourceNode.data.outputValue = (Number(sourceNode.data.carpan) > Number(targetNode.data.outputValue)) == true ? 'true' : 'false';
-            sourceNode.data.label = <>
-                <div className='lead text-center'>
-                    {sourceNode.data.carpan} greater than {targetNode.data.outputValue} ? {sourceNode.data.outputValue}
-
-                </div>
-            </>
+            sourceNode.data.label = sourceNode.data.outputValue
             setNodes(nodes);
             setRefreshFlag(state => !state)
         }
@@ -180,12 +157,8 @@ function Flow() {
 
         setNodes(prevState => ([...prevState, {
             id: (count + 1) + "", position: { x: 150, y: 150 }, data: {
-                label: <>
-                    <div className='lead text-center'>
-                        Carpan : {number}
-
-                    </div>
-                </>, outputValue: 0,
+                label: number
+                , outputValue: 0,
                 carpan: number,
                 customType: 'multiplier'
             }, type: 'default'
@@ -200,12 +173,8 @@ function Flow() {
 
         setNodes(prevState => ([...prevState, {
             id: (count + 1) + "", position: { x: 150, y: 150 }, data: {
-                label: <>
-                    <div className='lead text-center'>
-                        Sabit : {number}
-
-                    </div>
-                </>, outputValue: 0,
+                label: number
+                , outputValue: 0,
                 carpan: number,
                 customType: 'greaterThan'
             }, type: 'default'
@@ -219,7 +188,7 @@ function Flow() {
             <div className='row'>
                 <div className='col-12'>
                     <p className='text-center lead'>
-                        Project-1 Projesi
+                        {store.selectedProject.name} - Project
                     </p>
                 </div>
                 <div className='col-3'>
@@ -288,6 +257,18 @@ function Flow() {
                     <button className='btn btn-outline-danger w-100' onClick={() => {
                         console.log("nodes", nodes);
                         console.log("edges", edges);
+                        console.log("id", id);
+
+
+
+                        axios.put('https://localhost:7170/api/FlowTools', {
+                            Id: id,
+                            Nodes: nodes,
+                            Edges: edges,
+                        }).then(response => {
+
+                        })
+
                     }} >Save Project</button>
                 </div>
                 <div className='col-9'>
@@ -314,6 +295,6 @@ function Flow() {
 
 
     );
-}
+})
 
 export default Flow;
